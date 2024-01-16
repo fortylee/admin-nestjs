@@ -1,43 +1,64 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
-  Patch,
-  Param,
-  Delete,
   ValidationPipe,
+  UsePipes,
+  HttpStatus,
 } from '@nestjs/common';
 import { LoginService } from './login.service';
-import { LoginDto } from './dto/login.dto';
-import { UpdateLoginDto } from './dto/update-login.dto';
+import { AuthDto } from './dto/login.dto';
 
+/**
+ * 登录
+ */
 @Controller('login')
 export class LoginController {
   constructor(private readonly loginService: LoginService) {}
-
   @Post()
-  async create(@Body() data: LoginDto) {
-    return this.loginService.login(data);
+  @UsePipes(new ValidationPipe())
+  async create(@Body() req: AuthDto): Promise<object> {
+    return this.loginService.login(req);
   }
+}
 
-  @Get()
-  findAll() {
-    return this.loginService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.loginService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateLoginDto: UpdateLoginDto) {
-    return this.loginService.update(+id, updateLoginDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.loginService.remove(+id);
+/**
+ * 注册
+ */
+@Controller('register')
+export class RegisterController {
+  constructor(private readonly registerService: LoginService) {}
+  @Post()
+  @UsePipes(new ValidationPipe())
+  async create(@Body() req: AuthDto): Promise<object> {
+    let msg: {
+      message: string;
+      status: HttpStatus;
+    } = {
+      message: '',
+      status: 200,
+    };
+    await this.registerService.register(req).then((code) => {
+        if (code === 0) {
+          msg = {
+            message: `账号已存在，请更换`,
+            status: HttpStatus.FORBIDDEN,
+          };
+        } else if (code === 1) {
+          msg = {
+            message: `注册成功`,
+            status: HttpStatus.OK,
+          };
+        } else if (code === 2) {
+          msg = {
+            message: `注册失败`,
+            status: HttpStatus.FORBIDDEN,
+          };
+        }
+      })
+      .catch(() => {
+        throw new Error('服务异常');
+      });
+    return msg;
   }
 }

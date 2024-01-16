@@ -1,9 +1,9 @@
-import { IsNotEmpty, IsString } from 'class-validator';
-export class LoginDto {
-  @IsNotEmpty({ message: `请输入正确的账号` })
-  @IsString({ message: `请输入字符串` })
+import { IsNotEmpty } from 'class-validator';
+
+export class AuthDto {
+  @IsNotEmpty({ message: `userName不能为空！` })
   userName: string;
 
-  @IsNotEmpty({ message: `请输入正确的密码` })
+  @IsNotEmpty({ message: `passWord不能为空！` })
   passWord: string;
 }
