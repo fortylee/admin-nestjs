@@ -4,6 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserInfo } from './entities/login.entity';
 import * as bcrypt from 'bcryptjs';
+import * as svgCaptcha from 'svg-captcha';
+import * as process from 'process';
 
 @Injectable()
 export class LoginService {
@@ -11,7 +13,10 @@ export class LoginService {
     @InjectRepository(UserInfo)
     private readonly userRepository: Repository<UserInfo>,
   ) {}
-  // 注册账号
+  // 注册
+  async svgCaptcha() {
+
+  }
   async register(req: AuthDto): Promise<number> {
     // 查询账号存不存在数据库中
     const query = await this.userRepository
@@ -27,7 +32,7 @@ export class LoginService {
         .into(UserInfo)
         .values([{ user_name: req.userName, pass_word: req.passWord }])
         .execute();
-      // 判断是否插入数据成功
+      // 判断是否插入数据成功`
       result = add?.raw?.affectedRows === 1 ? 1 : 2;
     } else {
       // 存在，return
@@ -37,16 +42,19 @@ export class LoginService {
   }
 
   // 登录
-  async login(req: AuthDto): Promise<object> {
+  async login(req: AuthDto): Promise<string> {
+    let msg = '';
     const account = await this.userRepository.find({
       where: {
         user_name: req.userName,
       },
     });
     // 查找账号是否在数据库存在
-    if (!account?.[0]?.user_name) {
-      throw new HttpException('账号不存在！', HttpStatus.FORBIDDEN);
+    if (account) {
+      msg = '账号不存在';
+    } else {
+      msg = '账号存在';
     }
-    return req;
+    return msg;
   }
 }

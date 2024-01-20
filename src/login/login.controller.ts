@@ -1,26 +1,16 @@
 import {
-  Controller,
-  Post,
   Body,
-  ValidationPipe,
-  UsePipes,
+  Controller,
+  Get,
   HttpStatus,
+  Post,
+  Res,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { LoginService } from './login.service';
 import { AuthDto } from './dto/login.dto';
-
-/**
- * 登录
- */
-@Controller('login')
-export class LoginController {
-  constructor(private readonly loginService: LoginService) {}
-  @Post()
-  @UsePipes(new ValidationPipe())
-  async create(@Body() req: AuthDto): Promise<object> {
-    return this.loginService.login(req);
-  }
-}
+import * as svgCaptcha from 'svg-captcha';
 
 /**
  * 注册
@@ -60,5 +50,32 @@ export class RegisterController {
         throw new Error('服务异常');
       });
     return msg;
+  }
+
+  @Get()
+  async captcha(@Res() res: any) {
+    const options = {
+      size: 4,
+      noise: 1,
+      color: true,
+      background: '#666',
+    }
+    const captcha = svgCaptcha.create(options);
+    // res.setHeader('Content-type', 'image/svg+xml');
+    console.log(captcha.text);
+    res.send(captcha.data);
+  }
+}
+
+/**
+ * 登录
+ */
+@Controller('login')
+export class LoginController {
+  constructor(private readonly loginService: LoginService) {}
+  @Post()
+  @UsePipes(new ValidationPipe())
+  async create(@Body() req: AuthDto): Promise<string> {
+    return this.loginService.login(req);
   }
 }
