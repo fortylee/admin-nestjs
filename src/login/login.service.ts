@@ -5,7 +5,6 @@ import { Repository } from 'typeorm';
 import { UserInfo } from './entities/login.entity';
 import * as bcrypt from 'bcryptjs';
 import * as svgCaptcha from 'svg-captcha';
-import * as process from 'process';
 
 @Injectable()
 export class LoginService {
@@ -13,10 +12,12 @@ export class LoginService {
     @InjectRepository(UserInfo)
     private readonly userRepository: Repository<UserInfo>,
   ) {}
-  // 注册
-  async svgCaptcha() {
 
-  }
+  /**
+   * @desc 注册账号
+   * @param req{ userName, passWord }
+   * @return number { 0 = 账号已存在，1 = 注册成功，2 = 注册失败 }
+   */
   async register(req: AuthDto): Promise<number> {
     // 查询账号存不存在数据库中
     const query = await this.userRepository
@@ -30,18 +31,18 @@ export class LoginService {
         .createQueryBuilder()
         .insert()
         .into(UserInfo)
-        .values([{ user_name: req.userName, pass_word: req.passWord }])
+        .values([{ user_name: req.userName, pass_word: this.encryption(req.passWord)}])
         .execute();
-      // 判断是否插入数据成功`
-      result = add?.raw?.affectedRows === 1 ? 1 : 2;
+      // 判断是否插入数据成功，1 = 成功；2 = 失败
+      result = add?.raw?.["affectedRows"] === 1 ? 1 : 2;
     } else {
-      // 存在，return
+      // 账号存在，0 = 账号已存在
       result = 0;
     }
     return result;
   }
 
-  // 登录
+  // 登录 todo
   async login(req: AuthDto): Promise<string> {
     let msg = '';
     const account = await this.userRepository.find({
@@ -56,5 +57,36 @@ export class LoginService {
       msg = '账号存在';
     }
     return msg;
+  }
+
+  /**
+   * @desc 使用 svg-captcha 生成图形验证码
+   * @data svg 路径
+   * @text 验证码文字
+   * @returns { data, text }
+   */
+  captcha():{ data: string, text: string } {
+    // svg 配置
+    const options = {
+      size: 4,
+      noise: 1,
+      color: true,
+      background: '#666',
+      width: 100,
+      height: 40,
+      fontSize: 60,
+    }
+    const captcha = svgCaptcha.create(options)
+    return {
+      data: captcha.data,
+      text: captcha.text,
+    }
+  }
+
+  /**
+   * @desc 对密码进行加密处理
+   */
+  encryption(password: string): string {
+    return bcrypt.hashSync(password, 10)
   }
 }

@@ -10,60 +10,61 @@ import {
 } from '@nestjs/common';
 import { LoginService } from './login.service';
 import { AuthDto } from './dto/login.dto';
-import * as svgCaptcha from 'svg-captcha';
 
 /**
- * 注册
+ * @classdesc 注册类
+ * @Get 注册界面的图形验证码
+ * @Post 注册账号的主要逻辑
  */
 @Controller('register')
 export class RegisterController {
   constructor(private readonly registerService: LoginService) {}
+
+  private captchaText: string
+
+  /**
+   * @desc 注册账号的主要逻辑
+   * @param req{ userName, passWord }
+   */
   @Post()
   @UsePipes(new ValidationPipe())
   async create(@Body() req: AuthDto): Promise<object> {
-    let msg: {
+    let response: {
       message: string;
       status: HttpStatus;
-    } = {
-      message: '',
-      status: 200,
-    };
-    await this.registerService.register(req).then((code) => {
+    } | {};
+    response = {}
+    await this.registerService.register(req).then((code: number):void => {
         if (code === 0) {
-          msg = {
+          response = {
             message: `账号已存在，请更换`,
             status: HttpStatus.FORBIDDEN,
           };
         } else if (code === 1) {
-          msg = {
+          response = {
             message: `注册成功`,
             status: HttpStatus.OK,
           };
         } else if (code === 2) {
-          msg = {
+          response = {
             message: `注册失败`,
             status: HttpStatus.FORBIDDEN,
           };
         }
-      })
-      .catch(() => {
-        throw new Error('服务异常');
+      }).catch(() => {
+        throw new Error('服务异常，请稍后重试！');
       });
-    return msg;
+    return response;
   }
 
+  /**
+   * @desc 注册界面的图形验证码
+   */
   @Get()
-  async captcha(@Res() res: any) {
-    const options = {
-      size: 4,
-      noise: 1,
-      color: true,
-      background: '#666',
-    }
-    const captcha = svgCaptcha.create(options);
-    // res.setHeader('Content-type', 'image/svg+xml');
-    console.log(captcha.text);
+  async captcha(@Res() res: any): Promise<void> {
+    const captcha = this.registerService.captcha()
     res.send(captcha.data);
+    this.captchaText = captcha.text;
   }
 }
 
