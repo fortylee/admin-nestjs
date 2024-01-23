@@ -9,7 +9,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { LoginService } from './login.service';
-import { AuthDto } from './dto/login.dto';
+import { Register, Login } from './dto/login.dto';
 
 /**
  * @classdesc 注册类
@@ -20,7 +20,7 @@ import { AuthDto } from './dto/login.dto';
 export class RegisterController {
   constructor(private readonly registerService: LoginService) {}
 
-  private captchaText: string
+  private captchaText: string;
 
   /**
    * @desc 注册账号的主要逻辑
@@ -28,32 +28,45 @@ export class RegisterController {
    */
   @Post()
   @UsePipes(new ValidationPipe())
-  async create(@Body() req: AuthDto): Promise<object> {
+  async create(@Body() req: Register): Promise<object> {
     let response: {
       message: string;
       status: HttpStatus;
-    } | {};
-    response = {}
-    await this.registerService.register(req).then((code: number):void => {
-        if (code === 0) {
-          response = {
-            message: `账号已存在，请更换`,
-            status: HttpStatus.FORBIDDEN,
-          };
-        } else if (code === 1) {
-          response = {
-            message: `注册成功`,
-            status: HttpStatus.OK,
-          };
-        } else if (code === 2) {
-          response = {
-            message: `注册失败`,
-            status: HttpStatus.FORBIDDEN,
-          };
-        }
-      }).catch(() => {
-        throw new Error('服务异常，请稍后重试！');
-      });
+    } = {
+      message: '',
+      status: 200,
+    };
+    console.log(this.captchaText);
+    if (this.captchaText == req.verify) {
+      await this.registerService
+        .register(req)
+        .then((code: number): void => {
+          if (code === 0) {
+            response = {
+              message: `账号已存在，请更换`,
+              status: HttpStatus.FORBIDDEN,
+            };
+          } else if (code === 1) {
+            response = {
+              message: `注册成功`,
+              status: HttpStatus.OK,
+            };
+          } else if (code === 2) {
+            response = {
+              message: `注册失败`,
+              status: HttpStatus.FORBIDDEN,
+            };
+          }
+        })
+        .catch(() => {
+          throw new Error('服务异常，请稍后重试！');
+        });
+    } else {
+      return {
+        message: `验证码错误`,
+        status: HttpStatus.FORBIDDEN,
+      };
+    }
     return response;
   }
 
@@ -76,7 +89,7 @@ export class LoginController {
   constructor(private readonly loginService: LoginService) {}
   @Post()
   @UsePipes(new ValidationPipe())
-  async create(@Body() req: AuthDto): Promise<string> {
+  async create(@Body() req: Login): Promise<string> {
     return this.loginService.login(req);
   }
 }
